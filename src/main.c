@@ -1,4 +1,5 @@
 #include "raylib.h"
+#include "raymath.h"  // Include for Vector2 operations
 #include <stdlib.h>
 #include <time.h>
 #include <float.h>
@@ -7,13 +8,13 @@
 #define SCREEN_HEIGHT 600
 #define NUM_SEEDS 10
 #define SEED_RADIUS 4  
-#define SEED_COLOR (Color){255, 255, 255, 50}
+#define SEED_COLOR (Color){0, 0, 0, 100}
 #define SEED_VELOCITY(range) ((float)(range) * 0.5f)
 
 typedef struct {
-    float x, y;      // Position
-    float vx, vy;    // Velocity
-    Color color;     // Color from the Catppuccin palette
+    Vector2 position;  // Position using Vector2
+    Vector2 velocity;  // Velocity using Vector2
+    Color color;       // Color from the Catppuccin palette
 } Seed;
 
 int main(void) {
@@ -39,15 +40,14 @@ int main(void) {
     // Initialize seeds with random positions, velocities, and colors
     Seed seeds[NUM_SEEDS];
     for (int i = 0; i < NUM_SEEDS; i++) {
-        seeds[i].x = (float)(rand() % SCREEN_WIDTH);
-        seeds[i].y = (float)(rand() % SCREEN_HEIGHT);
-        seeds[i].vx = ((float)rand() / RAND_MAX) * SEED_VELOCITY(2); // Velocity between -1 and 1
-        seeds[i].vy = ((float)rand() / RAND_MAX) * SEED_VELOCITY(2);
+        seeds[i].position.x = (float)(rand() % SCREEN_WIDTH);
+        seeds[i].position.y = (float)(rand() % SCREEN_HEIGHT);
+        seeds[i].velocity.x = ((float)rand() / RAND_MAX) * SEED_VELOCITY(2) - SEED_VELOCITY(1); // Velocity between -1 and 1
+        seeds[i].velocity.y = ((float)rand() / RAND_MAX) * SEED_VELOCITY(2) - SEED_VELOCITY(1);
         seeds[i].color = palette[i % 10];
     }
 
     // Allocate pixel color buffer
-    // Heap allocation persists between frames
     Color* pixelColors = malloc(sizeof(Color) * SCREEN_WIDTH * SCREEN_HEIGHT);
     if (!pixelColors) {
         CloseWindow();
@@ -63,25 +63,25 @@ int main(void) {
     while (!WindowShouldClose()) {
         // Update seed positions and handle boundary collisions
         for (int i = 0; i < NUM_SEEDS; i++) {
-            seeds[i].x += seeds[i].vx;
-            seeds[i].y += seeds[i].vy;
+            // Update position with current velocity
+            seeds[i].position = Vector2Add(seeds[i].position, seeds[i].velocity);
 
-            // Bounce off left or right edges
-            if (seeds[i].x < 0) {
-                seeds[i].x = 0;
-                seeds[i].vx = -seeds[i].vx;
-            } else if (seeds[i].x > SCREEN_WIDTH) {
-                seeds[i].x = SCREEN_WIDTH;
-                seeds[i].vx = -seeds[i].vx;
+            // Bounce off left or right edges using radius
+            if (seeds[i].position.x - SEED_RADIUS < 0) {
+                seeds[i].position.x = SEED_RADIUS; // Position seed at edge plus radius
+                seeds[i].velocity.x = -seeds[i].velocity.x;
+            } else if (seeds[i].position.x + SEED_RADIUS >= SCREEN_WIDTH) {
+                seeds[i].position.x = SCREEN_WIDTH - SEED_RADIUS; // Position seed at edge minus radius
+                seeds[i].velocity.x = -seeds[i].velocity.x;
             }
 
-            // Bounce off top or bottom edges
-            if (seeds[i].y < 0) {
-                seeds[i].y = 0;
-                seeds[i].vy = -seeds[i].vy;
-            } else if (seeds[i].y > SCREEN_HEIGHT) {
-                seeds[i].y = SCREEN_HEIGHT;
-                seeds[i].vy = -seeds[i].vy;
+            // Bounce off top or bottom edges using radius
+            if (seeds[i].position.y - SEED_RADIUS < 0) {
+                seeds[i].position.y = SEED_RADIUS; // Position seed at edge plus radius
+                seeds[i].velocity.y = -seeds[i].velocity.y;
+            } else if (seeds[i].position.y + SEED_RADIUS >= SCREEN_HEIGHT) {
+                seeds[i].position.y = SCREEN_HEIGHT - SEED_RADIUS; // Position seed at edge minus radius
+                seeds[i].velocity.y = -seeds[i].velocity.y;
             }
         }
 
@@ -93,8 +93,8 @@ int main(void) {
 
                 // Find the closest seed for this pixel
                 for (int i = 0; i < NUM_SEEDS; i++) {
-                    float dx = (float)x - seeds[i].x;
-                    float dy = (float)y - seeds[i].y;
+                    float dx = (float)x - seeds[i].position.x;
+                    float dy = (float)y - seeds[i].position.y;
                     float distSquared = dx * dx + dy * dy;
                     if (distSquared < minDistSquared) {
                         minDistSquared = distSquared;
@@ -116,8 +116,7 @@ int main(void) {
         DrawTexture(texture, 0, 0, WHITE);   // Draw the Voronoi diagram first
         // Draw seeds as filled circles on top
         for (int i = 0; i < NUM_SEEDS; i++) {
-            DrawCircle((int)seeds[i].x, (int)seeds[i].y, SEED_RADIUS, SEED_COLOR);
-
+            DrawCircle((int)seeds[i].position.x, (int)seeds[i].position.y, SEED_RADIUS, SEED_COLOR);
         }
         EndDrawing();
     }
