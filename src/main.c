@@ -1,21 +1,32 @@
 #include "raylib.h"
 #include "raymath.h"  // Include for Vector2 operations
+#include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <float.h>
 
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 600
-#define NUM_SEEDS 10
+#define SEEDS_N_START 2
+#define SEEDS_N_MAX 10
 #define SEED_RADIUS 4  
 #define SEED_COLOR (Color){0, 0, 0, 100}
-#define SEED_VELOCITY(range) ((float)(range) * 0.5f)
+#define SEED_VELOCITY(range) (((float)rand() / RAND_MAX) * (range)) - ((range) * 0.5f)
 
 typedef struct {
     Vector2 position;  // Position using Vector2
     Vector2 velocity;  // Velocity using Vector2
     Color color;       // Color from the Catppuccin palette
 } Seed;
+
+int spawn_seed(Seed* seeds, const Color* palette, int count) {
+        seeds[count].position.x = (float)(rand() % SCREEN_WIDTH);
+        seeds[count].position.y = (float)(rand() % SCREEN_HEIGHT);
+        seeds[count].velocity.x = SEED_VELOCITY(2); // Velocity between -1 and 1
+        seeds[count].velocity.y = SEED_VELOCITY(2);
+        seeds[count].color = palette[count % 10];
+        return count + 1;
+}
 
 int main(void) {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Voronoi");
@@ -38,13 +49,10 @@ int main(void) {
     };
 
     // Initialize seeds with random positions, velocities, and colors
-    Seed seeds[NUM_SEEDS];
-    for (int i = 0; i < NUM_SEEDS; i++) {
-        seeds[i].position.x = (float)(rand() % SCREEN_WIDTH);
-        seeds[i].position.y = (float)(rand() % SCREEN_HEIGHT);
-        seeds[i].velocity.x = ((float)rand() / RAND_MAX) * SEED_VELOCITY(2) - SEED_VELOCITY(1); // Velocity between -1 and 1
-        seeds[i].velocity.y = ((float)rand() / RAND_MAX) * SEED_VELOCITY(2) - SEED_VELOCITY(1);
-        seeds[i].color = palette[i % 10];
+    Seed seeds[SEEDS_N_MAX];
+    int seed_count = 0;
+    for (int i = 0; i < SEEDS_N_START; i++) {
+        seed_count = spawn_seed(seeds, palette, seed_count);
     }
 
     // Allocate pixel color buffer
@@ -61,8 +69,14 @@ int main(void) {
 
     // Main render loop
     while (!WindowShouldClose()) {
+
+        if (IsKeyReleased(KEY_SPACE)) {
+            if (seed_count < SEEDS_N_MAX) {
+                seed_count = spawn_seed(seeds, palette, seed_count);
+            } 
+        }
         // Update seed positions and handle boundary collisions
-        for (int i = 0; i < NUM_SEEDS; i++) {
+        for (int i = 0; i < seed_count ; i++) {
             // Update position with current velocity
             seeds[i].position = Vector2Add(seeds[i].position, seeds[i].velocity);
 
@@ -92,7 +106,7 @@ int main(void) {
                 float minDistSquared = FLT_MAX;
 
                 // Find the closest seed for this pixel
-                for (int i = 0; i < NUM_SEEDS; i++) {
+                for (int i = 0; i < seed_count; i++) {
                     float dx = (float)x - seeds[i].position.x;
                     float dy = (float)y - seeds[i].position.y;
                     float distSquared = dx * dx + dy * dy;
@@ -115,7 +129,7 @@ int main(void) {
         ClearBackground(BLACK);              // Clear the screen
         DrawTexture(texture, 0, 0, WHITE);   // Draw the Voronoi diagram first
         // Draw seeds as filled circles on top
-        for (int i = 0; i < NUM_SEEDS; i++) {
+        for (int i = 0; i < seed_count; i++) {
             DrawCircle((int)seeds[i].position.x, (int)seeds[i].position.y, SEED_RADIUS, SEED_COLOR);
         }
         EndDrawing();
