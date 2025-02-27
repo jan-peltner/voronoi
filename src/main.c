@@ -11,7 +11,7 @@
 #define SEEDS_N_MAX 10
 #define SEED_RADIUS 4  
 #define SEED_COLOR (Color){0, 0, 0, 100}
-#define SEED_VELOCITY(range) (((float)rand() / RAND_MAX) * (range)) - ((range) * 0.5f)
+#define SEED_VELOCITY(range) (((float)rand() / RAND_MAX) * ((float)range)) - (((float)range) * 0.5f)
 
 typedef struct {
     Vector2 position;  // Position using Vector2
@@ -22,8 +22,8 @@ typedef struct {
 int spawn_seed(Seed* seeds, const Color* palette, int count) {
         seeds[count].position.x = (float)(rand() % SCREEN_WIDTH);
         seeds[count].position.y = (float)(rand() % SCREEN_HEIGHT);
-        seeds[count].velocity.x = SEED_VELOCITY(2); // Velocity between -1 and 1
-        seeds[count].velocity.y = SEED_VELOCITY(2);
+        seeds[count].velocity.x = SEED_VELOCITY(1); // Velocity between -1 and 1
+        seeds[count].velocity.y = SEED_VELOCITY(1);
         seeds[count].color = palette[count % 10];
         return count + 1;
 }
