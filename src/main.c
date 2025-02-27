@@ -51,7 +51,7 @@ int main(void) {
     // Initialize seeds with random positions, velocities, and colors
     Seed seeds[SEEDS_N_MAX];
     int seed_count = 0;
-    for (int i = 0; i < SEEDS_N_START; i++) {
+    for (int i = 0; i < SEEDS_N_START; ++i) {
         seed_count = spawn_seed(seeds, palette, seed_count);
     }
 
@@ -76,7 +76,7 @@ int main(void) {
             } 
         }
         // Update seed positions and handle boundary collisions
-        for (int i = 0; i < seed_count ; i++) {
+        for (int i = 0; i < seed_count ; ++i) {
             // Update position with current velocity
             seeds[i].position = Vector2Add(seeds[i].position, seeds[i].velocity);
 
@@ -106,7 +106,7 @@ int main(void) {
                 float minDistSquared = FLT_MAX;
 
                 // Find the closest seed for this pixel
-                for (int i = 0; i < seed_count; i++) {
+                for (int i = 0; i < seed_count; ++i) {
                     float dx = (float)x - seeds[i].position.x;
                     float dy = (float)y - seeds[i].position.y;
                     float distSquared = dx * dx + dy * dy;
@@ -129,7 +129,7 @@ int main(void) {
         ClearBackground(BLACK);              // Clear the screen
         DrawTexture(texture, 0, 0, WHITE);   // Draw the Voronoi diagram first
         // Draw seeds as filled circles on top
-        for (int i = 0; i < seed_count; i++) {
+        for (int i = 0; i < seed_count; ++i) {
             DrawCircle((int)seeds[i].position.x, (int)seeds[i].position.y, SEED_RADIUS, SEED_COLOR);
         }
         EndDrawing();
