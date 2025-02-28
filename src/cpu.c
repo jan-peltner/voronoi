@@ -1,22 +1,16 @@
 #include "raylib.h"
-#include "raymath.h" 
+#include "raymath.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <float.h>
 
-// Screen
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 600
-
-// Colors
-#define PALETTE_N 10
-
-// Seeds
 #define SEEDS_N_START 2
 #define SEEDS_N_MAX 10
 #define SEED_RADIUS 4  
-#define SEED_COLOR (Color){0, 0, 0, 127}
+#define SEED_COLOR (Color){0, 0, 0, 100}
 #define SEED_VELOCITY(range) (((float)rand() / RAND_MAX) * ((float)range)) - (((float)range) * 0.5f)
 
 typedef struct {
@@ -25,22 +19,13 @@ typedef struct {
     Color color;
 } Seed;
 
-int spawnSeed(Seed* seeds, const Color* palette, int count) {
+int spawn_seed(Seed* seeds, const Color* palette, int count) {
         seeds[count].position.x = (float)(rand() % SCREEN_WIDTH);
         seeds[count].position.y = (float)(rand() % SCREEN_HEIGHT);
         seeds[count].velocity.x = SEED_VELOCITY(1); // Velocity between -1 and 1
         seeds[count].velocity.y = SEED_VELOCITY(1);
         seeds[count].color = palette[count % 10];
         return count + 1;
-}
-
-void paletteToNormalizedFloats(const Color* palette, float* out, size_t len) {
-    for (size_t i = 0; i < len; ++i) {
-        out[i * 4] = palette[i].r / 255.0f;
-        out[i * 4 + 1] = palette[i].g / 255.0f;
-        out[i * 4 + 2] = palette[i].b / 255.0f;
-        out[i * 4 + 3] = palette[i].a / 255.0f;
-    }
 }
 
 int main(void) {
@@ -50,7 +35,7 @@ int main(void) {
     srand(time(NULL));
 
     // Define a subset of the Catppuccin Mocha palette (10 colors)
-    Color palette[PALETTE_N] = {
+    Color palette[10] = {
         {245, 224, 220, 255}, // Rosewater
         {242, 205, 205, 255}, // Flamingo
         {245, 194, 231, 255}, // Pink
@@ -62,43 +47,34 @@ int main(void) {
         {148, 226, 213, 255}, // Teal
         {137, 180, 250, 255}  // Blue
     };
-    
 
     // Initialize seeds with random positions, velocities, and colors
     Seed seeds[SEEDS_N_MAX];
     int seed_count = 0;
     for (int i = 0; i < SEEDS_N_START; ++i) {
-        seed_count = spawnSeed(seeds, palette, seed_count);
+        seed_count = spawn_seed(seeds, palette, seed_count);
     }
 
-    Shader shdr = LoadShader("voronoi.vert", "voronoi.frag");
+    // Allocate pixel color buffer
+    Color* pixelColors = malloc(sizeof(Color) * SCREEN_WIDTH * SCREEN_HEIGHT);
+    if (!pixelColors) {
+        CloseWindow();
+        return 1; // Exit if malloc fails
+    }
 
-    // Get handles for the shader uniforms
-    int shdr_seed_count_loc = GetShaderLocation(shdr, "seedCount");
-    int shdr_seed_positions_loc = GetShaderLocation(shdr, "seedPositions");
-    int shdr_colors_loc = GetShaderLocation(shdr, "seedColors");
-    
-
-    // Spread Seed and Color struct arrays
-    float shdr_colors[PALETTE_N * 4];
-    paletteToNormalizedFloats(palette, shdr_colors, PALETTE_N);
-    SetShaderValueV(shdr, shdr_colors_loc, shdr_colors, SHADER_UNIFORM_VEC4, PALETTE_N);
-    // We only need x and y coord fields, omit Color field
-    float shdr_seed_positions[SEEDS_N_MAX * 2];
-
-    RenderTexture2D target = LoadRenderTexture(SCREEN_WIDTH, SCREEN_HEIGHT);
-
+    // Create a texture for rendering
+    Image image = GenImageColor(SCREEN_WIDTH, SCREEN_HEIGHT, BLACK);
+    Texture2D texture = LoadTextureFromImage(image);
+    UnloadImage(image);
 
     // Main render loop
     while (!WindowShouldClose()) {
 
         if (IsKeyReleased(KEY_SPACE)) {
             if (seed_count < SEEDS_N_MAX) {
-                seed_count = spawnSeed(seeds, palette, seed_count);
+                seed_count = spawn_seed(seeds, palette, seed_count);
             } 
         }
-
-        SetShaderValue(shdr, shdr_seed_count_loc, &seed_count, SHADER_UNIFORM_INT);
         // Update seed positions and handle boundary collisions
         for (int i = 0; i < seed_count ; ++i) {
             // Update position with current velocity
@@ -121,42 +97,47 @@ int main(void) {
                 seeds[i].position.y = SCREEN_HEIGHT - SEED_RADIUS; // Position seed at edge minus radius
                 seeds[i].velocity.y = -seeds[i].velocity.y;
             }
-
-            shdr_seed_positions[i * 2] = seeds[i].position.x;
-            shdr_seed_positions[i * 2 + 1] = seeds[i].position.y;
         }
 
-        SetShaderValueV(shdr, shdr_seed_positions_loc, shdr_seed_positions, SHADER_UNIFORM_VEC2, seed_count);
+        // Compute the Voronoi diagram
+        for (int y = 0; y < SCREEN_HEIGHT; y++) {
+            for (int x = 0; x < SCREEN_WIDTH; x++) {
+                int closestSeed = 0;
+                float minDistSquared = FLT_MAX;
 
-        // Render Voronoi diagram using shader
-        BeginTextureMode(target);
-            ClearBackground(BLACK);
-            BeginShaderMode(shdr);
-            DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, WHITE);
-            EndShaderMode();
+                // Find the closest seed for this pixel
+                for (int i = 0; i < seed_count; ++i) {
+                    float dx = (float)x - seeds[i].position.x;
+                    float dy = (float)y - seeds[i].position.y;
+                    float distSquared = dx * dx + dy * dy;
+                    if (distSquared < minDistSquared) {
+                        minDistSquared = distSquared;
+                        closestSeed = i;
+                    }
+                }
 
-        EndTextureMode();
+                // Assign the color of the closest seed to this pixel
+                pixelColors[y * SCREEN_WIDTH + x] = seeds[closestSeed].color;
+            }
+        }
+
+        // Update the texture with the new pixel data
+        UpdateTexture(texture, pixelColors);
 
         // Draw the frame
         BeginDrawing();
-        ClearBackground(BLACK);
-
-        // Draw diagram previously rendered by shader
-        DrawTextureRec(target.texture, 
-            (Rectangle){ 0, 0, (float)target.texture.width, (float)target.texture.height }, 
-            (Vector2){ 0, 0 }, 
-            WHITE);
+        ClearBackground(BLACK);              // Clear the screen
+        DrawTexture(texture, 0, 0, WHITE);   // Draw the Voronoi diagram first
         // Draw seeds as filled circles on top
         for (int i = 0; i < seed_count; ++i) {
-                DrawCircle((int)seeds[i].position.x, (int)seeds[i].position.y, SEED_RADIUS, SEED_COLOR);
+            DrawCircle((int)seeds[i].position.x, (int)seeds[i].position.y, SEED_RADIUS, SEED_COLOR);
         }
-
         EndDrawing();
     }
 
     // Clean up
-    UnloadRenderTexture(target);
-    UnloadShader(shdr);
+    free(pixelColors);
+    UnloadTexture(texture);
     CloseWindow();
 
     return 0;
