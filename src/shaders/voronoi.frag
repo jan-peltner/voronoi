@@ -17,7 +17,7 @@ void main()
 	vec2 pixelPos = gl_FragCoord.xy;
 
 	// Find closest seed (Voronoi diagram computation)
-	float minDistSqr = 1000000.0;
+	float minDistSqr = 1000000000.0;
 	int closestSeed = 0;
 
 	for (int i = 0; i < seedCount; ++i) {
@@ -31,6 +31,6 @@ void main()
 		}
 	}
 
-	finalColor = seedColors[closestSeed];
+	finalColor = seedColors[closestSeed % 10];
 }
 
