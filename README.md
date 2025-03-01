@@ -1,0 +1,29 @@
+# Voronoi Diagram Generator
+
+A simple interactive application that displays animated Voronoi diagrams using GPU shaders. The program renders colorful regions based on moving seed points.
+
+## Features
+
+- GPU-accelerated Voronoi diagram rendering
+- Animated seeds with simple physics (boundary collisions)
+- Press SPACE to add more seed points (up to 10 maximum)
+- Uses the Catppuccin Mocha color palette
+
+## Quickstart
+
+```
+./run.sh
+```
+
+Compiles the program, copies the necessary shader files to the bin directory, and then runs the executable.
+
+## Requirements
+
+- raylib library
+- OpenGL support for shader functionality
+
+## Implementation
+
+The program includes two implementations:
+- `main.c`: GPU-accelerated version using fragment shaders
+- `cpu.c`: CPU-based implementation (not compiled by default)
