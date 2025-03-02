@@ -30,6 +30,7 @@ typedef struct {
     Seed seeds[SEEDS_N_MAX];
     unsigned int seedCount;
     bool isPaused;
+    bool hideSeeds;
 } State;
 
 int spawnSeed(Seed* seeds, const Color* palette, unsigned int count) {
@@ -67,12 +68,16 @@ void handleKeyEvents(State* state, Color* palette) {
                     --state->seedCount;
                 } 
             }
+
+            if (IsKeyReleased(KEY_H)) {
+                state->hideSeeds = !state->hideSeeds;
+            }
         }
 }
 
 int main(void) {
     // App state
-    State state = {{}, false, 0};
+    State state = {{}, 0, false, false};
 
     // Define a subset of the Catppuccin Mocha palette (10 colors)
     Color palette[PALETTE_N] = {
@@ -123,7 +128,7 @@ int main(void) {
 
         if (!state.isPaused) {
             // Update seed positions and handle boundary collisions
-            for (int i = 0; i < state.seedCount; ++i) {
+            for (unsigned int i = 0; i < state.seedCount; ++i) {
                 // Update position with current velocity
                 state.seeds[i].position = Vector2Add(state.seeds[i].position, state.seeds[i].velocity);
 
@@ -171,8 +176,10 @@ int main(void) {
             (Vector2){ 0, 0 }, 
             WHITE);
         // Draw seeds as filled circles on top
-        for (int i = 0; i < state.seedCount; ++i) {
-                DrawCircle((int)state.seeds[i].position.x, (int)state.seeds[i].position.y, SEED_RADIUS, SEED_COLOR);
+        if (!state.hideSeeds) {
+            for (unsigned int i = 0; i < state.seedCount; ++i) {
+                    DrawCircle((int)state.seeds[i].position.x, (int)state.seeds[i].position.y, SEED_RADIUS, SEED_COLOR);
+            }
         }
 
         EndDrawing();
