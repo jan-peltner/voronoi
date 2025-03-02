@@ -44,6 +44,7 @@ void paletteToNormalizedFloats(const Color* palette, float* out, size_t len) {
 }
 
 int main(void) {
+    bool is_paused = false; 
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Voronoi");
     SetTargetFPS(60);
 
@@ -92,38 +93,52 @@ int main(void) {
     // Main render loop
     while (!WindowShouldClose()) {
 
-        if (IsKeyReleased(KEY_SPACE)) {
+        if (IsKeyReleased(KEY_S)) {
             if (seed_count < SEEDS_N_MAX) {
                 seed_count = spawnSeed(seeds, palette, seed_count);
             } 
         }
 
+        if (IsKeyReleased(KEY_D)) {
+            if (seed_count > 1) {
+                --seed_count;
+            } 
+        }
+
+        if (IsKeyReleased(KEY_SPACE)) {
+            is_paused = !is_paused;
+        }
+
+
         SetShaderValue(shdr, shdr_seed_count_loc, &seed_count, SHADER_UNIFORM_INT);
-        // Update seed positions and handle boundary collisions
-        for (int i = 0; i < seed_count ; ++i) {
-            // Update position with current velocity
-            seeds[i].position = Vector2Add(seeds[i].position, seeds[i].velocity);
 
-            // Bounce off left or right edges using radius
-            if (seeds[i].position.x - SEED_RADIUS < 0) {
-                seeds[i].position.x = SEED_RADIUS; // Position seed at edge plus radius
-                seeds[i].velocity.x = -seeds[i].velocity.x;
-            } else if (seeds[i].position.x + SEED_RADIUS >= SCREEN_WIDTH) {
-                seeds[i].position.x = SCREEN_WIDTH - SEED_RADIUS; // Position seed at edge minus radius
-                seeds[i].velocity.x = -seeds[i].velocity.x;
+        if (!is_paused) {
+            // Update seed positions and handle boundary collisions
+            for (int i = 0; i < seed_count ; ++i) {
+                // Update position with current velocity
+                seeds[i].position = Vector2Add(seeds[i].position, seeds[i].velocity);
+
+                // Bounce off left or right edges using radius
+                if (seeds[i].position.x - SEED_RADIUS < 0) {
+                    seeds[i].position.x = SEED_RADIUS; // Position seed at edge plus radius
+                    seeds[i].velocity.x = -seeds[i].velocity.x;
+                } else if (seeds[i].position.x + SEED_RADIUS >= SCREEN_WIDTH) {
+                    seeds[i].position.x = SCREEN_WIDTH - SEED_RADIUS; // Position seed at edge minus radius
+                    seeds[i].velocity.x = -seeds[i].velocity.x;
+                }
+
+                // Bounce off top or bottom edges using radius
+                if (seeds[i].position.y - SEED_RADIUS < 0) {
+                    seeds[i].position.y = SEED_RADIUS; // Position seed at edge plus radius
+                    seeds[i].velocity.y = -seeds[i].velocity.y;
+                } else if (seeds[i].position.y + SEED_RADIUS >= SCREEN_HEIGHT) {
+                    seeds[i].position.y = SCREEN_HEIGHT - SEED_RADIUS; // Position seed at edge minus radius
+                    seeds[i].velocity.y = -seeds[i].velocity.y;
+                }
+
+                shdr_seed_positions[i * 2] = seeds[i].position.x;
+                shdr_seed_positions[i * 2 + 1] = seeds[i].position.y;
             }
-
-            // Bounce off top or bottom edges using radius
-            if (seeds[i].position.y - SEED_RADIUS < 0) {
-                seeds[i].position.y = SEED_RADIUS; // Position seed at edge plus radius
-                seeds[i].velocity.y = -seeds[i].velocity.y;
-            } else if (seeds[i].position.y + SEED_RADIUS >= SCREEN_HEIGHT) {
-                seeds[i].position.y = SCREEN_HEIGHT - SEED_RADIUS; // Position seed at edge minus radius
-                seeds[i].velocity.y = -seeds[i].velocity.y;
-            }
-
-            shdr_seed_positions[i * 2] = seeds[i].position.x;
-            shdr_seed_positions[i * 2 + 1] = seeds[i].position.y;
         }
 
         SetShaderValueV(shdr, shdr_seed_positions_loc, shdr_seed_positions, SHADER_UNIFORM_VEC2, seed_count);

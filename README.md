@@ -6,12 +6,17 @@ A simple interactive application that displays animated Voronoi diagrams using G
 
 - GPU-accelerated Voronoi diagram rendering
 - Animated seeds with simple physics (boundary collisions)
-- Press SPACE to add more seed points (up to 10 maximum)
+- Simple controls to spawn/delete seeds and pause/resume the animation
 - Uses the Catppuccin Mocha color palette
+
+## Controls
+ - <kbd>S</kbd> Spawn a seed
+ - <kbd>D</kbd> Delete last seed
+ - <kbd>Space</kbd> Pause/Resume
 
 ## Quickstart
 
-```
+```bash
 ./run.sh
 ```
 
