@@ -14,6 +14,7 @@ A simple interactive application that displays animated Voronoi diagrams using G
  - <kbd>D</kbd> Delete last seed
  - <kbd>H</kbd> Hide/Show seeds
  - <kbd>Space</kbd> Pause/Resume
+ - <kbd>Esc</kbd> Quit
 
 ## Quickstart
 
