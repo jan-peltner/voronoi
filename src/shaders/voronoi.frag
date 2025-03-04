@@ -8,9 +8,9 @@ in vec4 fragColor;
 out vec4 finalColor;
 
 // Uniforms
-uniform int seedCount;        // Number of seeds (points)
-uniform vec2 seedPositions[20]; // Array of seed positions (x,y)
-uniform vec4 seedColors[10];  // Array of seed colors (r,g,b,a)
+uniform int seedCount;
+uniform vec2 seedPositions[20];
+uniform vec4 seedColors[10];
 
 void main()
 {
